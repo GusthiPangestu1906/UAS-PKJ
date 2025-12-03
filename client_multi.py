@@ -4,30 +4,39 @@ import sys
 import os
 
 def receive_messages(sock):
+    """Menerima pesan dari server"""
     while True:
         try:
             msg = sock.recv(1024).decode('utf-8')
             if msg:
-                print(msg)
+                # \r digunakan untuk menimpa baris input user yang sedang mengetik
+                # agar pesan baru tidak merusak tampilan input
+                sys.stdout.write("\r" + msg + "\n> ")
+                sys.stdout.flush()
             else:
-                print("\n[ ! ] Koneksi terputus dari server.")
+                print("\n[!] Koneksi terputus dari server.")
                 sock.close()
-                os._exit(0) # Force exit
+                os._exit(0)
                 break
         except:
-            print("\n[ ! ] Terjadi error atau server mati.")
+            print("\n[!] Server down atau error.")
             sock.close()
             os._exit(0)
             break
 
 def write_messages(sock):
+    """Mengirim pesan"""
     while True:
         try:
+            # Tanda prompt '>' biar kelihatan tempat ngetik
+            sys.stdout.write("> ")
+            sys.stdout.flush()
             msg = input()
-            # Trick visual: Hapus baris input user dan ganti dengan pesan server nanti
-            # (Agar tidak ada double text di layar sendiri)
-            sys.stdout.write("\033[F") 
+            
             if msg:
+                # Trik visual: Hapus baris input user setelah di-enter
+                # Nanti pesan akan muncul lagi dari balikan server (broadcast)
+                sys.stdout.write("\033[F\033[K")
                 sock.send(msg.encode('utf-8'))
         except:
             break
