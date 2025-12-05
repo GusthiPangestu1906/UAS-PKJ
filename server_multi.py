@@ -4,15 +4,13 @@ from datetime import datetime
 import sys
 import os
 
-# === KONFIGURASI WARNA (INOVASI TAMPILAN) ===
-# JELASKAN: "Saya pakai kode ANSI supaya terminal berwarna, Pak."
 COLOR_RESET = "\033[0m"
 COLOR_YELLOW = "\033[93m"  # Info Sistem
 COLOR_GREEN = "\033[92m"   # Pesan Client
 COLOR_CYAN = "\033[96m"    # Pesan Admin
 COLOR_RED = "\033[91m"     # Error/Exit
 
-os.system('') # Trik agar Windows support warna
+os.system('') 
 
 HOST = '0.0.0.0' # Listen di semua IP
 PORT = 2000      # Nomor Port (Pintu Masuk)
@@ -22,7 +20,7 @@ client_names = []
 server_socket = None
 
 def get_timestamp():
-    # Menambahkan waktu realtime agar seperti log profesional
+    # Menambahkan waktu realtime 
     return datetime.now().strftime("%H:%M:%S")
 
 def broadcast(message, sender_socket=None):
@@ -67,7 +65,7 @@ def remove_client(client_socket):
         broadcast(msg)
 
 def server_write():
-    # Thread khusus agar Admin Server bisa ikut mengetik (Interaktif)
+    # Thread khusus agar Admin Server bisa ikut mengetik
     while True:
         try:
             msg = input("") 
