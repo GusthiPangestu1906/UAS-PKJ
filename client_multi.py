@@ -3,51 +3,66 @@ import threading
 import sys
 import os
 
-# Warna Lokal Client
-COLOR_RESET = "\033[0m"
-COLOR_RED = "\033[91m"
-COLOR_CYAN = "\033[96m"
+if os.name == "nt":
+    os.system("")
 
-os.system('') 
+RESET   = "\033[0m"
+CYAN    = "\033[96m"
+MAGENTA = "\033[95m"
+YELLOW  = "\033[93m"
+BLUE    = "\033[94m"
+GREY    = "\033[90m"
+RED     = "\033[91m"
+
+def make_box(title, message, color=CYAN):
+    lines = message.split("\n")
+    width = max(len(title) + 6, max(len(line) for line in lines) + 2)
+    top    = f"{color}┌── {title} {'─' * (width - len(title) - 4)}┐{RESET}"
+    bottom = f"{color}└{'─' * (width + 2)}┘{RESET}"
+    middle = ""
+    for line in lines:
+        middle += f"{color}│ {RESET}{line.ljust(width)}{color} │{RESET}\n"
+    return f"\n{top}\n{middle}{bottom}\n"
 
 def receive_messages(sock):
-    # Thread ini tugasnya cuma DENGAR pesan dari server terus menerus.
     while True:
         try:
-            # recv() di sini blocking, menunggu paket data masuk
-            msg = sock.recv(1024).decode('utf-8')
-            if msg:
-                sys.stdout.write("\r" + msg + "\n> ")
-                sys.stdout.flush()
-            else:
-                print(f"\n\n{COLOR_RED}[!] Server telah ditutup. Tekan Enter untuk keluar.{COLOR_RESET}")
-                sock.close()
+            msg = sock.recv(4096).decode("utf-8")
+            if not msg:
+                print(f"\n{RED}[!] Server memutus koneksi.{RESET}")
                 os._exit(0)
-                break
+            sys.stdout.write("\r" + msg + "\n> ")
+            sys.stdout.flush()
         except:
-            print(f"\n{COLOR_RED}[!] Koneksi terputus.{COLOR_RESET}")
-            sock.close()
+            print(f"\n{RED}[!] Koneksi terputus.{RESET}")
             os._exit(0)
-            break
 
 def write_messages(sock):
-    # Fungsi ini untuk MENGIRIM pesan ke server.
     while True:
         try:
+            # Tampilkan prompt
             sys.stdout.write("> ")
             sys.stdout.flush()
+            
+            # Input user (Bisa kena Ctrl+C disini)
             msg = input()
             
-            if msg.lower() == 'exit':
-                print(f"\n{COLOR_RED}[!] Anda memutuskan koneksi.{COLOR_RESET}")
+            # Fitur exit lewat ketikan
+            if msg.lower() == "exit":
+                print(f"{YELLOW}[!] Keluar dari chat.{RESET}")
                 sock.close()
                 os._exit(0)
-                break
-
-            if msg:
-                sys.stdout.write("\033[F\033[K")
-                # send() mengirim data via TCP
-                sock.send(msg.encode('utf-8'))
+            
+            # Trik Visual: Hapus baris input user biar ga numpuk
+            sys.stdout.write("\033[F\033[K")
+            
+            sock.send(msg.encode("utf-8"))
+            
+        except KeyboardInterrupt:
+            # Menangkap Ctrl+C
+            print(f"\n{RED}[!] Anda menekan Ctrl+C. Keluar...{RESET}")
+            sock.close()
+            os._exit(0)
         except:
             break
 
@@ -55,40 +70,29 @@ def start_client():
     if len(sys.argv) != 2:
         print("Usage: python client_multi.py <IP_SERVER>")
         sys.exit(1)
-        
+
     HOST = sys.argv[1]
     PORT = 2000
 
     try:
-        # Membuat Socket TCP
-        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        
-        # Memulai 3-Way Handshake
-        client.connect((HOST, PORT))
-        
-        print(f"{COLOR_CYAN}" + "="*60)
-        print(f" TERHUBUNG KE SERVER: {HOST}:{PORT}")
-        print("="*60)
-        print(" [i] Ketik pesan lalu ENTER.")
-        print(" [i] Ketik 'exit' atau Tekan Ctrl+C untuk keluar.")
-        print("-" * 60 + f"{COLOR_RESET}")
-        
-        # Multitasking: Satu telinga mendengar (receive), satu mulut bicara (write)
-        receive_thread = threading.Thread(target=receive_messages, args=(client,))
-        receive_thread.daemon = True
-        receive_thread.start()
+        sock = socket.socket()
+        sock.connect((HOST, PORT))
 
-        write_messages(client)
+        my_ip, my_port = sock.getsockname()
+
+        print("=" * 60)
+        print(f"{CYAN} TERHUBUNG KE SERVER {HOST}:{PORT}{RESET}")
+        print(f"{BLUE} Client Port: {my_port}{RESET}")
+        print("=" * 60)
+        print(" [i] Ketik 'exit' atau Tekan Ctrl+C untuk keluar.\n")
+
+        threading.Thread(target=receive_messages, args=(sock,), daemon=True).start()
+        write_messages(sock)
 
     except KeyboardInterrupt:
-        print(f"\n\n{COLOR_RED}[!] Keluar...{COLOR_RESET}")
-        try:
-            client.close()
-        except:
-            pass
-        os._exit(0)
+        print(f"\n{RED}[!] Batal/Keluar.{RESET}")
     except Exception as e:
-        print(f"{COLOR_RED}[x] Gagal konek ke server: {e}{COLOR_RESET}")
+        print(f"{RED}[x] Gagal konek: {e}{RESET}")
 
 if __name__ == "__main__":
     start_client()
